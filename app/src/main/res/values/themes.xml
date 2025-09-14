@@ -1,0 +1,22 @@
+<resources>
+
+    <!-- Tema ROJO (simple y compatible) -->
+    <style name="Theme.MiniPokedexUI.Red" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary_red</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorSurface">@color/surface_white</item>
+        <item name="colorOnSurface">@color/on_surface_black</item>
+        <!-- opcional: color de la status bar -->
+        <item name="android:statusBarColor">?attr/colorPrimary</item>
+    </style>
+
+    <!-- Tema AZUL (por si luego quieres cambiar) -->
+    <style name="Theme.MiniPokedexUI.Blue" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary_blue</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorSurface">@color/surface_white</item>
+        <item name="colorOnSurface">@color/on_surface_black</item>
+        <item name="android:statusBarColor">?attr/colorPrimary</item>
+    </style>
+
+</resources>

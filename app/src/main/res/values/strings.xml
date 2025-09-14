@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">MiniPokedexUI</string>
+
+    <!-- UI texts -->
+    <string name="title_minipokedex">Mini PokeDex UI</string>
+    <string name="hint_query">Nombre o ID (ej: pikachu o 25)</string>
+    <string name="btn_search">Buscar</string>
+    <string name="btn_clear">Limpiar</string>
+    <string name="lbl_shiny">Shiny</string>
+    <string name="toggle_on_artwork">Artwork</string>
+    <string name="toggle_off_sprite">Sprite</string>
+    <string name="rb_front">Frente</string>
+    <string name="rb_back">Espalda</string>
+    <string name="sw_details">Mostrar detalles</string>
+    <string name="tv_basic">Nombre / ID</string>
+    <string name="tv_details_placeholder">Detalles (tipo, peso, habilidades…)</string>
+    <string name="cd_random">Aleatorio</string>
+    <string name="cd_pokemon_image">Imagen del Pokémon</string>
+</resources>
