@@ -1,5 +1,11 @@
 package com.poudex.minipokedexui;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -7,6 +13,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Switch;
@@ -14,10 +21,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 
+import java.util.Locale;
 import java.util.Random;
 
 import retrofit2.Call;
@@ -26,7 +35,7 @@ import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int MAX_POKEMON_ID = 1025; // rango práctico actual
+    private static final int MAX_POKEMON_ID = 1025;
 
     private EditText etQuery;
     private Button btnSearch, btnClear;
@@ -38,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private Switch swDetails;
     private ImageView ivPokemon;
     private TextView tvBasic, tvDetails;
+    private ProgressBar progress;
 
     private PokeApi pokeApi;
     private PokemonResponse currentPokemon;
@@ -46,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         initViews();
         initApi();
         setupListeners();
@@ -66,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
         ivPokemon = findViewById(R.id.ivPokemon);
         tvBasic = findViewById(R.id.tvBasic);
         tvDetails = findViewById(R.id.tvDetails);
+        progress = findViewById(R.id.progress);
     }
 
     private void initApi() {
@@ -74,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupListeners() {
         btnSearch.setOnClickListener(v -> {
-            String query = etQuery.getText().toString().trim().toLowerCase();
+            String query = etQuery.getText().toString().trim().toLowerCase(Locale.ROOT);
             if (!query.isEmpty()) {
                 searchPokemon(query);
             } else {
@@ -89,15 +99,15 @@ public class MainActivity extends AppCompatActivity {
 
         btnClear.setOnClickListener(v -> clearAll());
 
-        // Actualizar imagen al cambiar opciones
         cbShiny.setOnCheckedChangeListener((buttonView, isChecked) -> updatePokemonImage());
+
         tgSpriteArtwork.setOnCheckedChangeListener((buttonView, isChecked) -> {
             updatePokemonImage();
-            // Artwork solo tiene frente → deshabilitamos radios
             rbFront.setEnabled(!isChecked);
             rbBack.setEnabled(!isChecked);
             if (isChecked) rbFront.setChecked(true);
         });
+
         rgSide.setOnCheckedChangeListener((group, checkedId) -> updatePokemonImage());
 
         swDetails.setOnCheckedChangeListener((buttonView, isChecked) ->
@@ -105,15 +115,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void searchPokemon(String nameOrId) {
+        if (!isOnline()) {
+            Toast.makeText(this, getString(R.string.msg_no_internet), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         btnSearch.setEnabled(false);
         btnRandom.setEnabled(false);
+        progress.setVisibility(View.VISIBLE);
 
         Call<PokemonResponse> call = pokeApi.getPokemon(nameOrId);
-        call.enqueue(new Callback<PokemonResponse>() {
+        call.enqueue(new Callback<>() {
             @Override
-            public void onResponse(Call<PokemonResponse> call, Response<PokemonResponse> response) {
+            public void onResponse(@NonNull Call<PokemonResponse> call,
+                                   @NonNull Response<PokemonResponse> response) {
                 btnSearch.setEnabled(true);
                 btnRandom.setEnabled(true);
+                progress.setVisibility(View.GONE);
 
                 if (!response.isSuccessful()) {
                     if (response.code() == 404) {
@@ -124,8 +142,9 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
-                if (response.body() != null) {
-                    currentPokemon = response.body();
+                PokemonResponse body = response.body();
+                if (body != null) {
+                    currentPokemon = body;
                     displayPokemon();
                 } else {
                     Toast.makeText(MainActivity.this, "Respuesta vacía", Toast.LENGTH_SHORT).show();
@@ -133,9 +152,10 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<PokemonResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<PokemonResponse> call, @NonNull Throwable t) {
                 btnSearch.setEnabled(true);
                 btnRandom.setEnabled(true);
+                progress.setVisibility(View.GONE);
                 Toast.makeText(MainActivity.this, "Error de conexión: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
@@ -144,12 +164,12 @@ public class MainActivity extends AppCompatActivity {
     private void displayPokemon() {
         if (currentPokemon == null) return;
 
-        // Info básica
-        String basicInfo = String.format("%s (#%d)",
-                capitalize(currentPokemon.name), currentPokemon.id);
+        String basicInfo = String.format(
+                Locale.getDefault(), "%s (#%d)",
+                capitalize(currentPokemon.name), currentPokemon.id
+        );
         tvBasic.setText(basicInfo);
 
-        // Detalles
         StringBuilder details = new StringBuilder();
         details.append("Peso: ").append(currentPokemon.weight / 10.0).append(" kg\n");
 
@@ -214,19 +234,36 @@ public class MainActivity extends AppCompatActivity {
         tvDetails.setText(getString(R.string.tv_details_placeholder));
         tvDetails.setVisibility(View.GONE);
         ivPokemon.setImageResource(R.drawable.ic_launcher_foreground);
-
         cbShiny.setChecked(false);
         tgSpriteArtwork.setChecked(false);
         rbFront.setChecked(true);
         swDetails.setChecked(false);
         rbFront.setEnabled(true);
         rbBack.setEnabled(true);
-
         currentPokemon = null;
     }
 
     private String capitalize(String str) {
         if (str == null || str.isEmpty()) return str;
-        return str.substring(0, 1).toUpperCase() + str.substring(1);
+        return str.substring(0, 1).toUpperCase(Locale.getDefault()) + str.substring(1);
+    }
+
+    private boolean isOnline() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Network network = cm.getActiveNetwork();
+            if (network == null) return false;
+            NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+            return caps != null && (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                    || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                    || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
+        } else {
+            @SuppressWarnings("deprecation")
+            NetworkInfo ni = cm.getActiveNetworkInfo();
+            //noinspection deprecation
+            return ni != null && ni.isConnected();
+        }
     }
 }

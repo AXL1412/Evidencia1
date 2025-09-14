@@ -16,4 +16,8 @@
     <string name="tv_details_placeholder">Detalles (tipo, peso, habilidades…)</string>
     <string name="cd_random">Aleatorio</string>
     <string name="cd_pokemon_image">Imagen del Pokémon</string>
+    <string name="msg_loading">Cargando…</string>
+    <string name="msg_no_internet">Sin conexión a Internet</string>
+
+
 </resources>
